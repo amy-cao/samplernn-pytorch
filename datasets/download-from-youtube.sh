@@ -11,7 +11,7 @@ dataset_path=$3
 
 downloaded=".temp"
 rm -f $downloaded
-format=$(youtube-dl -F $url | grep audio | sed -r 's|([0-9]+).*|\1|g' | tail -n 1)
+format=$(youtube-dl -F $url | grep audio | awk '{print $1}'|tail -n 1)
 youtube-dl $url -f $format -o $downloaded
 
 converted=".temp2.wav"
