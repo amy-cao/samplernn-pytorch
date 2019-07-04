@@ -43,7 +43,6 @@ default_params = {
     'sample_rate': 16000,
     'n_samples': 1,
     'sample_length': 80000,
-    'loss_smoothing': 0.99,
     'cuda': True
 }
 
@@ -314,11 +313,6 @@ if __name__ == '__main__':
     parser.add_argument(
         '--sample_length', type=int,
         help='length of each generated sample (in samples)'
-    )
-    parser.add_argument(
-        '--loss_smoothing', type=float,
-        help='smoothing parameter of the exponential moving average over \
-              training loss, used in the log and in the loss plot'
     )
     parser.add_argument(
         '--cuda', type=parse_bool,
