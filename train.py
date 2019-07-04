@@ -3,7 +3,7 @@ from optim import gradient_clipping
 from nn import sequence_nll_loss_bits
 from trainer import Trainer
 from trainer.plugins import (
-    ValidationPlugin, AbsoluteTimeMonitor, SaverPlugin,
+    ValidationPlugin, SaverPlugin,
     GeneratorPlugin, StatsPlugin
 )
 from dataset import FolderDataset, DataLoader
@@ -184,7 +184,7 @@ def main(exp, frame_sizes, dataset, **params):
         data_loader(val_split, test_split, eval=True),
         data_loader(test_split, 1, eval=True)
     ))
-    trainer.register_plugin(AbsoluteTimeMonitor())
+
     trainer.register_plugin(SaverPlugin(
         checkpoints_path, params['keep_old_checkpoints']
     ))
