@@ -7,7 +7,6 @@ import torch
 from torch.autograd import Variable
 from torch.utils.trainer.plugins.plugin import Plugin
 from torch.utils.trainer.plugins.monitor import Monitor
-from torch.utils.trainer.plugins import LossMonitor
 
 from librosa.output import write_wav
 from matplotlib import pyplot
@@ -16,11 +15,6 @@ from glob import glob
 import os
 import pickle
 import time
-
-
-class TrainingLossMonitor(LossMonitor):
-
-    stat_name = 'training_loss'
 
 
 class ValidationPlugin(Plugin):

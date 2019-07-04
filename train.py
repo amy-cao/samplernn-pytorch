@@ -3,7 +3,7 @@ from optim import gradient_clipping
 from nn import sequence_nll_loss_bits
 from trainer import Trainer
 from trainer.plugins import (
-    TrainingLossMonitor, ValidationPlugin, AbsoluteTimeMonitor, SaverPlugin,
+    ValidationPlugin, AbsoluteTimeMonitor, SaverPlugin,
     GeneratorPlugin, StatsPlugin
 )
 from dataset import FolderDataset, DataLoader
@@ -181,9 +181,6 @@ def main(exp, frame_sizes, dataset, **params):
         trainer.iterations = iteration
         predictor.load_state_dict(state_dict)
 
-    trainer.register_plugin(TrainingLossMonitor(
-        smoothing=params['loss_smoothing']
-    ))
     trainer.register_plugin(ValidationPlugin(
         data_loader(val_split, test_split, eval=True),
         data_loader(test_split, 1, eval=True)
