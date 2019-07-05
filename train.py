@@ -1,15 +1,15 @@
 from model import SampleRNN, Predictor
 from optim import gradient_clipping
 from nn import sequence_nll_loss_bits
-from trainer import Trainer
-from trainer.plugins import (
-    ValidationPlugin, SaverPlugin,
-    GeneratorPlugin, StatsPlugin
-)
+# from trainer import Trainer
+# from trainer.plugins import (
+#     ValidationPlugin, SaverPlugin,
+#     GeneratorPlugin, StatsPlugin
+# )
 from dataset import FolderDataset, DataLoader
 
 import torch
-from torch.utils.trainer.plugins import Logger
+# from torch.utils.trainer.plugins import Logger
 
 from natsort import natsorted
 
@@ -86,23 +86,6 @@ def setup_results_dir(params):
 
     return results_path
 
-def load_last_checkpoint(checkpoints_path):
-    checkpoints_pattern = os.path.join(
-        checkpoints_path, SaverPlugin.last_pattern.format('*', '*')
-    )
-    checkpoint_paths = natsorted(glob(checkpoints_pattern))
-    if len(checkpoint_paths) > 0:
-        checkpoint_path = checkpoint_paths[-1]
-        checkpoint_name = os.path.basename(checkpoint_path)
-        match = re.match(
-            SaverPlugin.last_pattern.format(r'(\d+)', r'(\d+)'),
-            checkpoint_name
-        )
-        epoch = int(match.group(1))
-        iteration = int(match.group(2))
-        return (torch.load(checkpoint_path), epoch, iteration)
-    else:
-        return None
 
 def tee_stdout(log_path):
     log_file = open(log_path, 'a', 1)
@@ -136,6 +119,8 @@ def make_data_loader(overlap_len, params):
         )
     return data_loader
 
+def train(args, model, optimizer, epoch):
+    pass
 
 def main(exp, frame_sizes, dataset, **params):
     params = dict(
@@ -166,68 +151,89 @@ def main(exp, frame_sizes, dataset, **params):
     test_split = 1 - params['test_frac']
     val_split = test_split - params['val_frac']
 
-    trainer = Trainer(
-        predictor, sequence_nll_loss_bits, optimizer,
-        data_loader(0, val_split, eval=False),
-        cuda=params['cuda']
-    )
 
-    checkpoints_path = os.path.join(results_path, 'checkpoints')
-    checkpoint_data = load_last_checkpoint(checkpoints_path)
-    if checkpoint_data is not None:
-        (state_dict, epoch, iteration) = checkpoint_data
-        trainer.epochs = epoch
-        trainer.iterations = iteration
-        predictor.load_state_dict(state_dict)
+    # trainer = Trainer(
+    #     predictor, sequence_nll_loss_bits, optimizer,
+    #     data_loader(0, val_split, eval=False),
+    #     cuda=params['cuda']
+    # )
 
-    trainer.register_plugin(ValidationPlugin(
-        data_loader(val_split, test_split, eval=True),
-        data_loader(test_split, 1, eval=True)
-    ))
+    # checkpoints_path = os.path.join(results_path, 'checkpoints')
+    # checkpoint_data = load_last_checkpoint(checkpoints_path)
+    # if checkpoint_data is not None:
+    #     (state_dict, epoch, iteration) = checkpoint_data
+    #     trainer.epochs = epoch
+    #     trainer.iterations = iteration
+    #     predictor.load_state_dict(state_dict)
 
-    trainer.register_plugin(SaverPlugin(
-        checkpoints_path, params['keep_old_checkpoints']
-    ))
-    trainer.register_plugin(GeneratorPlugin(
-        os.path.join(results_path, 'samples'), params['n_samples'],
-        params['sample_length'], params['sample_rate']
-    ))
-    trainer.register_plugin(
-        Logger([
-            'training_loss',
-            'validation_loss',
-            'test_loss',
-            'time'
-        ])
-    )
-    trainer.register_plugin(StatsPlugin(
-        results_path,
-        iteration_fields=[
-            'training_loss',
-            ('training_loss', 'running_avg'),
-            'time'
-        ],
-        epoch_fields=[
-            'validation_loss',
-            'test_loss',
-            'time'
-        ],
-        plots={
-            'loss': {
-                'x': 'iteration',
-                'ys': [
-                    'training_loss',
-                    ('training_loss', 'running_avg'),
-                    'validation_loss',
-                    'test_loss',
-                ],
-                'log_y': True
-            }
-        }
-    ))
+    # trainer.register_plugin(ValidationPlugin(
+    #     data_loader(val_split, test_split, eval=True),
+    #     data_loader(test_split, 1, eval=True)
+    # ))
+
+    # trainer.register_plugin(SaverPlugin(
+    #     checkpoints_path, params['keep_old_checkpoints']
+    # ))
+    # trainer.register_plugin(GeneratorPlugin(
+    #     os.path.join(results_path, 'samples'), params['n_samples'],
+    #     params['sample_length'], params['sample_rate']
+    # ))
+    # trainer.register_plugin(
+    #     Logger([
+    #         'training_loss',
+    #         'validation_loss',
+    #         'test_loss',
+    #         'time'
+    #     ])
+    # )
+    # trainer.register_plugin(StatsPlugin(
+    #     results_path,
+    #     iteration_fields=[
+    #         'training_loss',
+    #         ('training_loss', 'running_avg'),
+    #         'time'
+    #     ],
+    #     epoch_fields=[
+    #         'validation_loss',
+    #         'test_loss',
+    #         'time'
+    #     ],
+    #     plots={
+    #         'loss': {
+    #             'x': 'iteration',
+    #             'ys': [
+    #                 'training_loss',
+    #                 ('training_loss', 'running_avg'),
+    #                 'validation_loss',
+    #                 'test_loss',
+    #             ],
+    #             'log_y': True
+    #         }
+    #     }
+    # ))
 
 
-    trainer.run(params['epoch_limit'])
+    # trainer.run(params['epoch_limit'])
+
+
+# def load_last_checkpoint(checkpoints_path):
+#     checkpoints_pattern = os.path.join(
+#         checkpoints_path, SaverPlugin.last_pattern.format('*', '*')
+#     )
+#     checkpoint_paths = natsorted(glob(checkpoints_pattern))
+#     if len(checkpoint_paths) > 0:
+#         checkpoint_path = checkpoint_paths[-1]
+#         checkpoint_name = os.path.basename(checkpoint_path)
+#         match = re.match(
+#             SaverPlugin.last_pattern.format(r'(\d+)', r'(\d+)'),
+#             checkpoint_name
+#         )
+#         epoch = int(match.group(1))
+#         iteration = int(match.group(2))
+#         return (torch.load(checkpoint_path), epoch, iteration)
+#     else:
+#         return None
+
 
 
 if __name__ == '__main__':
