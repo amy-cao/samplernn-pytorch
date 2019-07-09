@@ -52,7 +52,7 @@ def concat_init(tensor, inits):
     try:
         tensor = tensor.data
     except AttributeError:
-        pass
+        print('concat_init AttributeError')
 
     (length, fan_out) = tensor.size()
     fan_in = length // len(inits)

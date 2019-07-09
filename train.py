@@ -1,6 +1,7 @@
 from model import SampleRNN, Predictor
 from optim import gradient_clipping
 from nn import sequence_nll_loss_bits
+from utils import log
 # from trainer import Trainer
 # from trainer.plugins import (
 #     ValidationPlugin, SaverPlugin,
@@ -30,7 +31,7 @@ default_params = {
     'q_levels': 256,
     'seq_len': 1024,
     'weight_norm': True,
-    'batch_size': 128,
+    'batch_size': 2, # original 128
     'val_frac': 0.1,
     'test_frac': 0.1,
 
@@ -119,8 +120,16 @@ def make_data_loader(overlap_len, params):
         )
     return data_loader
 
-def train(args, model, optimizer, epoch):
-    pass
+
+def train_epoch(model, optimizer, train_data_loader, **params):
+    model.train()
+
+
+def train(model, optimizer, train_data_loader, ** params):
+    for epoch in range(params['epoch_limit']):
+        log('Epoch {}:'.format(epoch + 1))
+        train_epoch(model, optimizer)
+
 
 def main(exp, frame_sizes, dataset, **params):
     params = dict(
@@ -147,9 +156,15 @@ def main(exp, frame_sizes, dataset, **params):
 
     optimizer = gradient_clipping(torch.optim.Adam(predictor.parameters()))
 
-    data_loader = make_data_loader(model.lookback, params)
     test_split = 1 - params['test_frac']
     val_split = test_split - params['val_frac']
+    data_loader = make_data_loader(model.lookback, params)
+
+    train_data_loader = data_loader(0, val_split, eval=False)
+    val_data_loader = data_loader(val_split, test_split, eval=True)
+    test_data_loader = data_loader(test_split, 1, eval=True)
+
+    # train(model, optimizer, train_data_loader)  # TODO: add necessary arguments
 
 
     # trainer = Trainer(

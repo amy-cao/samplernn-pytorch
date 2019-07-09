@@ -1,4 +1,4 @@
-import nn
+import nn as N
 import utils
 
 import torch
@@ -19,7 +19,7 @@ class SampleRNN(nn.Module):
         self.q_levels = q_levels
 
         ns_frame_samples = map(int, np.cumprod(frame_sizes))
-        self.frame_level_rnns = torch.nn.ModuleList([
+        self.frame_level_rnns = nn.ModuleList([
             FrameLevelRNN(
                 frame_size, n_frame_samples, n_rnn, dim, learn_h0, weight_norm
             )
@@ -49,11 +49,11 @@ class FrameLevelRNN(nn.Module):
 
         h0 = torch.zeros(n_rnn, dim)
         if learn_h0:
-            self.h0 = torch.nn.Parameter(h0)
+            self.h0 = nn.Parameter(h0)
         else:
             self.register_buffer('h0', torch.autograd.Variable(h0))
 
-        self.input_expand = torch.nn.Conv1d(
+        self.input_expand = nn.Conv1d(
             in_channels=n_frame_samples,
             out_channels=dim,
             kernel_size=1
@@ -61,28 +61,28 @@ class FrameLevelRNN(nn.Module):
         init.kaiming_uniform_(self.input_expand.weight)
         init.constant_(self.input_expand.bias, 0)
         if weight_norm:
-            self.input_expand = torch.nn.utils.weight_norm(self.input_expand)
+            self.input_expand = nn.utils.weight_norm(self.input_expand)
 
-        self.rnn = torch.nn.GRU(
+        self.rnn = nn.GRU(
             input_size=dim,
             hidden_size=dim,
             num_layers=n_rnn,
             batch_first=True
         )
         for i in range(n_rnn):
-            nn.concat_init(
+            N.concat_init(
                 getattr(self.rnn, 'weight_ih_l{}'.format(i)),
-                [nn.lecun_uniform, nn.lecun_uniform, nn.lecun_uniform]
+                [N.lecun_uniform, N.lecun_uniform, N.lecun_uniform]
             )
             init.constant_(getattr(self.rnn, 'bias_ih_l{}'.format(i)), 0)
 
-            nn.concat_init(
+            N.concat_init(
                 getattr(self.rnn, 'weight_hh_l{}'.format(i)),
-                [nn.lecun_uniform, nn.lecun_uniform, init.orthogonal_]
+                [N.lecun_uniform, N.lecun_uniform, init.orthogonal_]
             )
             init.constant_(getattr(self.rnn, 'bias_hh_l{}'.format(i)), 0)
 
-        self.upsampling = nn.LearnedUpsampling1d(
+        self.upsampling = N.LearnedUpsampling1d(
             in_channels=dim,
             out_channels=dim,
             kernel_size=frame_size
@@ -92,7 +92,7 @@ class FrameLevelRNN(nn.Module):
         )
         init.constant_(self.upsampling.bias, 0)
         if weight_norm:
-            self.upsampling.conv_t = torch.nn.utils.weight_norm(
+            self.upsampling.conv_t = nn.utils.weight_norm(
                 self.upsampling.conv_t
             )
 
@@ -128,12 +128,12 @@ class SampleLevelMLP(nn.Module):
 
         self.q_levels = q_levels
 
-        self.embedding = torch.nn.Embedding(
+        self.embedding = nn.Embedding(
             self.q_levels,
             self.q_levels
         )
 
-        self.input = torch.nn.Conv1d(
+        self.input = nn.Conv1d(
             in_channels=q_levels,
             out_channels=dim,
             kernel_size=frame_size,
@@ -141,9 +141,9 @@ class SampleLevelMLP(nn.Module):
         )
         init.kaiming_uniform_(self.input.weight)
         if weight_norm:
-            self.input = torch.nn.utils.weight_norm(self.input)
+            self.input = nn.utils.weight_norm(self.input)
 
-        self.hidden = torch.nn.Conv1d(
+        self.hidden = nn.Conv1d(
             in_channels=dim,
             out_channels=dim,
             kernel_size=1
@@ -151,17 +151,17 @@ class SampleLevelMLP(nn.Module):
         init.kaiming_uniform_(self.hidden.weight)
         init.constant_(self.hidden.bias, 0)
         if weight_norm:
-            self.hidden = torch.nn.utils.weight_norm(self.hidden)
+            self.hidden = nn.utils.weight_norm(self.hidden)
 
-        self.output = torch.nn.Conv1d(
+        self.output = nn.Conv1d(
             in_channels=dim,
             out_channels=q_levels,
             kernel_size=1
         )
-        nn.lecun_uniform(self.output.weight)
+        N.lecun_uniform(self.output.weight)
         init.constant_(self.output.bias, 0)
         if weight_norm:
-            self.output = torch.nn.utils.weight_norm(self.output)
+            self.output = nn.utils.weight_norm(self.output)
 
     def forward(self, prev_samples, upper_tier_conditioning):
         (batch_size, _, _) = upper_tier_conditioning.size()

@@ -50,15 +50,16 @@ class DataLoader(DataLoaderBase):
     def __iter__(self):
         for batch in super().__iter__():
             (batch_size, n_samples) = batch.size()
-
+            print(batch.size())
             reset = True
 
+            # range(64, # total samples, 1024)
             for seq_begin in range(self.overlap_len, n_samples, self.seq_len):
                 from_index = seq_begin - self.overlap_len
                 to_index = seq_begin + self.seq_len
-                sequences = batch[:, from_index : to_index]
-                input_sequences = sequences[:, : -1]
-                target_sequences = sequences[:, self.overlap_len :].contiguous()
+                sequences = batch[:, from_index : to_index] # (batch_size, 1088)
+                input_sequences = sequences[:, : -1]  # (batch_size, 1087)
+                target_sequences = sequences[:, self.overlap_len :].contiguous() # (batch_size, 1024)
 
                 yield (input_sequences, reset, target_sequences)
 

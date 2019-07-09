@@ -1,3 +1,5 @@
+import datetime
+
 import torch
 from torch import nn
 import numpy as np
@@ -18,3 +20,7 @@ def linear_dequantize(samples, q_levels):
 
 def q_zero(q_levels):
     return q_levels // 2
+
+def log(*args, **kwargs):
+     print(datetime.datetime.now().strftime(
+         "%Y-%m-%d %H:%M:%S:"), *args, **kwargs)
