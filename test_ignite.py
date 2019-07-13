@@ -1,7 +1,8 @@
 from model import SampleRNN
 from train import *
+from trainer import create_supervised_trainer, create_supervised_evaluator
 
-from ignite.engine import Events, create_supervised_trainer, create_supervised_evaluator
+from ignite.engine import Events
 from ignite.metrics.loss import Loss
 # TODO: accuracy can be used if Loss is working 
 
@@ -32,9 +33,9 @@ def main(exp, frame_sizes, dataset, **params):
         model = model.cuda()
         predictor = predictor.cuda()
 
-    optimizer = gradient_clipping(torch.optim.Adam(predictor.parameters()))
+    optimizer = torch.optim.Adam(predictor.parameters())
+    # optimizer = gradient_clipping(torch.optim.Adam(predictor.parameters()))
     loss = sequence_nll_loss_bits
-    # loss = sequence_nll_loss_bits
 
     test_split = 1 - params['test_frac']
     val_split = test_split - params['val_frac']
@@ -44,25 +45,17 @@ def main(exp, frame_sizes, dataset, **params):
     val_loader = data_loader(val_split, test_split, eval=True)
     test_loader = data_loader(test_split, 1, eval=True)
 
-    trainer = create_supervised_trainer(model, optimizer, loss)
-
-    evaluator = create_supervised_evaluator(model,
-                                            metrics={
-                                                'nll': Loss(loss)
-                                            })
-    # optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.8)
-    # loss = torch.nn.NLLLoss()
-
-    trainer = create_supervised_trainer(predictor, optimizer, loss)
+    trainer = create_supervised_trainer(
+        predictor, optimizer, loss, params['cuda'])
     evaluator = create_supervised_evaluator(predictor,
                                             metrics={
                                                 'nll': Loss(loss)
                                             })
 
-    @trainer.on(Events.ITERATION_COMPLETED)
-    def log_training_loss(trainer):
-        print("Epoch[{}] Loss: {:.2f}".format(
-            trainer.state.epoch, trainer.state.output))
+    # @trainer.on(Events.ITERATION_COMPLETED)
+    # def log_training_loss(trainer):
+    #     print("Epoch[{}] Loss: {:.2f}".format(
+    #         trainer.state.epoch, trainer.state.output))
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_training_results(trainer):
@@ -80,8 +73,8 @@ def main(exp, frame_sizes, dataset, **params):
 
 
 
-    trainer.run(train_loader, max_epochs=100)
-    print('trainer runned!')
+    trainer.run(train_loader, max_epochs=2)
+    print('train complete!')
 
 
 

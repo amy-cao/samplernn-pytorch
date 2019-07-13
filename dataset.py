@@ -33,7 +33,7 @@ class FolderDataset(Dataset):
             utils.linear_quantize(
                 torch.from_numpy(seq), self.q_levels
             )
-        ])
+        ])#.to('cuda')
 
     def __len__(self):
         return len(self.file_names)
@@ -50,7 +50,6 @@ class DataLoader(DataLoaderBase):
     def __iter__(self):
         for batch in super().__iter__():
             (batch_size, n_samples) = batch.size()
-            print(batch.size())
             reset = True
 
             # range(64, # total samples, 1024)
@@ -58,9 +57,14 @@ class DataLoader(DataLoaderBase):
                 from_index = seq_begin - self.overlap_len
                 to_index = seq_begin + self.seq_len
                 sequences = batch[:, from_index : to_index] # (batch_size, 1088)
-                input_sequences = sequences[:, : -1]  # (batch_size, 1087)
+                input_sequences = sequences[:, : -1] # (batch_size, 1087)
+                # # incorporate reset into input_sequences in the last dimension
+                # input_sequences = torch.stack([input_sequences, input_sequences], dim=-1)
+                # input_sequences[:, :, -1] = 1 if reset else 0
+
                 target_sequences = sequences[:, self.overlap_len :].contiguous() # (batch_size, 1024)
 
+                # yield (input_sequences, target_sequences)
                 yield (input_sequences, reset, target_sequences)
 
                 reset = False

@@ -179,8 +179,9 @@ class SampleLevelMLP(nn.Module):
         x = F.relu(self.hidden(x))
         x = self.output(x).permute(0, 2, 1).contiguous()
 
-        return F.log_softmax(x.view(-1, self.q_levels)) \
+        return F.log_softmax(x.view(-1, self.q_levels), dim=1) \
                 .view(batch_size, -1, self.q_levels)
+        # dim=1, because log_softmax set dim=1 when x.dim() == 2
 
 
 class Runner:
@@ -207,6 +208,8 @@ class Predictor(Runner, nn.Module):
         super().__init__(model)
 
     def forward(self, input_sequences, reset):
+        # reset = input_sequences[:, :, -1][0][0].item() == 1
+        # input_sequences = input_sequences[:, :, 0]
         if reset:
             self.reset_hidden_states()
 

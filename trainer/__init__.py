@@ -1,4 +1,90 @@
 import torch
+from ignite.engine.engine import Engine
+from ignite.utils import convert_tensor
+
+
+def wrap(input, cuda):
+    if torch.is_tensor(input):
+        input = Variable(input)
+        if cuda:
+            input = input.cuda()
+    return input
+
+# Based on ignite.engine.__init__ code
+# (cuda argument is added)
+# (output_transform: get value of actual loss)
+def create_supervised_trainer(model, optimizer, loss_fn, cuda=True,
+                              device=None, non_blocking=False,
+                              output_transform=lambda x, y, y_pred, loss: loss.item()):
+    if device:
+        model.to(device)
+
+    def _update(engine, batch):
+        model.train()
+        optimizer.zero_grad()
+        data = batch
+        batch_inputs = data[: -1]
+        batch_target = data[-1]
+
+        batch_inputs = list(
+            map(wrap, batch_inputs, [cuda for _ in range(len(batch_inputs))]))
+        batch_target = Variable(batch_target)
+
+        if cuda:
+            batch_target = batch_target.cuda()
+
+        batch_output = model(*batch_inputs)
+        loss = loss_fn(batch_output, batch_target)
+        loss.backward()  # same as the one in closure() defined in trainer
+
+        optimizer.step()
+        return output_transform(batch_inputs, batch_target, batch_output, loss)
+
+    return Engine(_update)
+
+
+def create_supervised_evaluator(model, metrics={}, cuda=True,
+                                device=None, non_blocking=False,
+                                output_transform=lambda x, y, y_pred: (y_pred, y,)):
+
+    if device:
+        model.to(device)
+
+    def _inference(engine, batch):
+        model.eval()
+        with torch.no_grad():
+            batch_inputs = batch[: -1]
+            batch_target = batch[-1]
+
+            batch_inputs = list(
+                map(wrap, batch_inputs, [cuda for _ in range(len(batch_inputs))]))
+            
+            if cuda:
+                batch_target = batch_target.cuda()
+            batch_output = model(*batch_inputs)
+
+            return output_transform(batch_inputs, batch_target, batch_output)
+
+    engine = Engine(_inference)
+
+    for name, metric in metrics.items():
+        metric.attach(engine, name)
+
+    return engine
+
+
+
+
+
+
+
+
+
+
+
+
+
+import torch
 from torch.autograd import Variable
 
 import heapq
